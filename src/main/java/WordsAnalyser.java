@@ -6,79 +6,86 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WordsAnalyser {
-    private static final int CHAR_TO_INT_HELPER = 97;
-    private static final int LATIN_ALPHABET_LENGTH = 26;
-    private final List<String>[][] buckets;
-    private String originalWord;
-    private String longestWord;
-    private String secondLongestWord;
-
-    public WordsAnalyser() {
-        buckets = new ArrayList[LATIN_ALPHABET_LENGTH][LATIN_ALPHABET_LENGTH];
-        for (int i = 0; i < buckets.length; i++) {
-            for (int j = 0; j < buckets[i].length; j++) {
-                buckets[i][j] = new ArrayList<>();
-            }
-        }
-        longestWord = secondLongestWord = "";
-    }
-
-    public List<String> examineUrl(URL file) {
+    public static List<String> getConcatenatedWordsFromUrl(URL file) {
         List<String> wordList = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader
-                (new InputStreamReader(file.openStream()))) {
+        ResultData resultData = new ResultData();
+        try (BufferedReader reader
+                     = new BufferedReader(new InputStreamReader(file.openStream()))) {
             String word;
             while ((word = reader.readLine()) != null) {
                 if (!word.isEmpty()) {
                     wordList.add(word);
-                    buckets[findRow(word)][findCol(word)].add(word);
+                    resultData.sortWord(word);
                 }
             }
         } catch (IOException e) {
             System.out.println("There is no such file!");
         }
-        return getAllConcatenatedWords(wordList);
+        return resultData.getAllConcatenatedWords(wordList);
     }
 
-    public String getLongestWord() {
-        return longestWord;
+    public static String getLongestWord() {
+        return ResultData.longestWord;
     }
 
-    public String getSecondLongestWord() {
-        return secondLongestWord;
+    public static String getSecondLongestWord() {
+        return ResultData.secondLongestWord;
     }
 
-    private List<String> getAllConcatenatedWords(List<String> wordList) {
-        List<String> concatenatedWords = new ArrayList<>();
-        for (String word : wordList) {
-            originalWord = word;
-            if (word.length() > 3 && isConcatenated(word)) {
-                concatenatedWords.add(word);
-                if (word.length() > longestWord.length()) {
-                    secondLongestWord = longestWord;
-                    longestWord = word;
-                } else if (word.length() > secondLongestWord.length()) {
-                    secondLongestWord = word;
+    private static class ResultData {
+        static final int CHAR_TO_INT_HELPER = 97;
+        static final int LATIN_ALPHABET_LENGTH = 26;
+        static List<String>[][] wordLists;
+        static String currentWord;
+        static String longestWord;
+        static String secondLongestWord;
+
+        ResultData() {
+            wordLists = new ArrayList[LATIN_ALPHABET_LENGTH][LATIN_ALPHABET_LENGTH];
+            for (int i = 0; i < wordLists.length; i++) {
+                for (int j = 0; j < wordLists[i].length; j++) {
+                    wordLists[i][j] = new ArrayList<>();
                 }
             }
+            longestWord = secondLongestWord = "";
         }
-        return concatenatedWords;
-    }
 
-    private boolean isConcatenated(String word) {
-        return word.isEmpty()
-                || word.length() > 1
-                && buckets[findRow(word)][findCol(word)].stream()
+        void sortWord(String word) {
+            wordLists[findRow(word)][findCol(word)].add(word);
+        }
+
+        List<String> getAllConcatenatedWords(List<String> wordList) {
+            List<String> concatenatedWords = new ArrayList<>();
+            for (String word : wordList) {
+                currentWord = word;
+                if (word.length() > 3 && isConcatenated(word)) {
+                    concatenatedWords.add(word);
+                    if (word.length() > longestWord.length()) {
+                        secondLongestWord = longestWord;
+                        longestWord = word;
+                    } else if (word.length() > secondLongestWord.length()) {
+                        secondLongestWord = word;
+                    }
+                }
+            }
+            return concatenatedWords;
+        }
+
+        boolean isConcatenated(String word) {
+            return word.isEmpty()
+                    || word.length() > 1
+                    && wordLists[findRow(word)][findCol(word)].stream()
                     .anyMatch(element -> word.contains(element)
-                        && !element.equals(originalWord)
-                        && isConcatenated(word.replace(element, "")));
-    }
+                            && !element.equals(currentWord)
+                            && isConcatenated(word.replace(element, "")));
+        }
 
-    private int findRow(String word) {
-        return word.charAt(0) - CHAR_TO_INT_HELPER;
-    }
+        int findRow(String word) {
+            return word.charAt(0) - CHAR_TO_INT_HELPER;
+        }
 
-    private int findCol(String word) {
-        return word.charAt(1) - CHAR_TO_INT_HELPER;
+        int findCol(String word) {
+            return word.charAt(1) - CHAR_TO_INT_HELPER;
+        }
     }
 }
