@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WordsAnalyser {
-    public static List<String> getConcatenatedWordsFromUrl(URL file) {
+    public List<String> getConcatenatedWordsFromUrl(URL file) {
         List<String> wordList = new ArrayList<>();
         ResultData resultData = new ResultData();
         try (BufferedReader reader
@@ -24,21 +24,20 @@ public class WordsAnalyser {
         return resultData.getAllConcatenatedWords(wordList);
     }
 
-    public static String getLongestWord() {
+    public String getLongestWord() {
         return ResultData.longestWord;
     }
 
-    public static String getSecondLongestWord() {
+    public String getSecondLongestWord() {
         return ResultData.secondLongestWord;
     }
 
     private static class ResultData {
         static final int CHAR_TO_INT_HELPER = 97;
         static final int LATIN_ALPHABET_LENGTH = 26;
-        static List<String>[][] wordLists;
-        static String currentWord;
         static String longestWord;
         static String secondLongestWord;
+        List<String>[][] wordLists;
 
         ResultData() {
             wordLists = new ArrayList[LATIN_ALPHABET_LENGTH][LATIN_ALPHABET_LENGTH];
@@ -57,8 +56,7 @@ public class WordsAnalyser {
         List<String> getAllConcatenatedWords(List<String> wordList) {
             List<String> concatenatedWords = new ArrayList<>();
             for (String word : wordList) {
-                currentWord = word;
-                if (word.length() > 3 && isConcatenated(word)) {
+                if (word.length() > 3 && isConcatenated(word, word)) {
                     concatenatedWords.add(word);
                     if (word.length() > longestWord.length()) {
                         secondLongestWord = longestWord;
@@ -71,13 +69,13 @@ public class WordsAnalyser {
             return concatenatedWords;
         }
 
-        boolean isConcatenated(String word) {
+        boolean isConcatenated(String word, String originalWord) {
             return word.isEmpty()
                     || word.length() > 1
                     && wordLists[findRow(word)][findCol(word)].stream()
                     .anyMatch(element -> word.contains(element)
-                            && !element.equals(currentWord)
-                            && isConcatenated(word.replace(element, "")));
+                            && !element.equals(originalWord)
+                            && isConcatenated(word.replace(element, ""), originalWord));
         }
 
         int findRow(String word) {
