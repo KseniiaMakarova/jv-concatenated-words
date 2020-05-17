@@ -6,22 +6,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WordsAnalyser {
+    private static final int CHAR_TO_INT_HELPER = 97;
+
     public List<String> getConcatenatedWordsFromUrl(URL file) {
+        ResultData.initializeData();
         List<String> wordList = new ArrayList<>();
-        ResultData resultData = new ResultData();
-        try (BufferedReader reader
-                     = new BufferedReader(new InputStreamReader(file.openStream()))) {
-            String word;
-            while ((word = reader.readLine()) != null) {
-                if (!word.isEmpty()) {
-                    wordList.add(word);
-                    resultData.sortWord(word);
-                }
-            }
+        try {
+            wordList = readWordsFromUrl(file);
         } catch (IOException e) {
             System.out.println("There is no such file!");
         }
-        return resultData.getAllConcatenatedWords(wordList);
+        return getAllConcatenatedWords(wordList);
     }
 
     public String getLongestWord() {
@@ -32,14 +27,63 @@ public class WordsAnalyser {
         return ResultData.secondLongestWord;
     }
 
+    private List<String> readWordsFromUrl(URL file) throws IOException {
+        List<String> wordList = new ArrayList<>();
+        try (BufferedReader reader
+                     = new BufferedReader(new InputStreamReader(file.openStream()))) {
+            String word;
+            while ((word = reader.readLine()) != null) {
+                if (!word.isEmpty()) {
+                    wordList.add(word);
+                    ResultData.wordLists[findRow(word)][findCol(word)].add(word);
+                }
+            }
+        }
+        return wordList;
+    }
+
+    private List<String> getAllConcatenatedWords(List<String> wordList) {
+        List<String> concatenatedWords = new ArrayList<>();
+        for (String word : wordList) {
+            if (word.length() > 3 && isConcatenated(word, word)) {
+                concatenatedWords.add(word);
+                String longestWord = ResultData.longestWord;
+                String secondLongestWord = ResultData.secondLongestWord;
+                if (word.length() > longestWord.length()) {
+                    ResultData.secondLongestWord = longestWord;
+                    ResultData.longestWord = word;
+                } else if (word.length() > secondLongestWord.length()) {
+                    ResultData.secondLongestWord = word;
+                }
+            }
+        }
+        return concatenatedWords;
+    }
+
+    private boolean isConcatenated(String word, String originalWord) {
+        return word.isEmpty()
+                || word.length() > 1
+                && ResultData.wordLists[findRow(word)][findCol(word)].stream()
+                .anyMatch(element -> word.contains(element)
+                        && !element.equals(originalWord)
+                        && isConcatenated(word.replace(element, ""), originalWord));
+    }
+
+    private int findRow(String word) {
+        return word.charAt(0) - CHAR_TO_INT_HELPER;
+    }
+
+    private int findCol(String word) {
+        return word.charAt(1) - CHAR_TO_INT_HELPER;
+    }
+
     private static class ResultData {
-        static final int CHAR_TO_INT_HELPER = 97;
         static final int LATIN_ALPHABET_LENGTH = 26;
         static String longestWord;
         static String secondLongestWord;
-        List<String>[][] wordLists;
+        static List<String>[][] wordLists;
 
-        ResultData() {
+        static void initializeData() {
             wordLists = new ArrayList[LATIN_ALPHABET_LENGTH][LATIN_ALPHABET_LENGTH];
             for (int i = 0; i < wordLists.length; i++) {
                 for (int j = 0; j < wordLists[i].length; j++) {
@@ -47,43 +91,6 @@ public class WordsAnalyser {
                 }
             }
             longestWord = secondLongestWord = "";
-        }
-
-        void sortWord(String word) {
-            wordLists[findRow(word)][findCol(word)].add(word);
-        }
-
-        List<String> getAllConcatenatedWords(List<String> wordList) {
-            List<String> concatenatedWords = new ArrayList<>();
-            for (String word : wordList) {
-                if (word.length() > 3 && isConcatenated(word, word)) {
-                    concatenatedWords.add(word);
-                    if (word.length() > longestWord.length()) {
-                        secondLongestWord = longestWord;
-                        longestWord = word;
-                    } else if (word.length() > secondLongestWord.length()) {
-                        secondLongestWord = word;
-                    }
-                }
-            }
-            return concatenatedWords;
-        }
-
-        boolean isConcatenated(String word, String originalWord) {
-            return word.isEmpty()
-                    || word.length() > 1
-                    && wordLists[findRow(word)][findCol(word)].stream()
-                    .anyMatch(element -> word.contains(element)
-                            && !element.equals(originalWord)
-                            && isConcatenated(word.replace(element, ""), originalWord));
-        }
-
-        int findRow(String word) {
-            return word.charAt(0) - CHAR_TO_INT_HELPER;
-        }
-
-        int findCol(String word) {
-            return word.charAt(1) - CHAR_TO_INT_HELPER;
         }
     }
 }
